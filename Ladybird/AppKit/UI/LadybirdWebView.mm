@@ -705,6 +705,35 @@ static void copy_data_to_clipboard(StringView data, NSPasteboardType pasteboard_
         [NSMenu popUpContextMenu:context_menu withEvent:event forView:self];
     };
 
+    m_web_view_bridge->on_request_username_password = [weak_self]() {
+        LadybirdWebView* self = weak_self;
+
+        auto* username_field = [[NSTextField alloc] initWithFrame:NSMakeRect(0, 26, 200, 24)];
+        [username_field setPlaceholderString:@"Username"];
+
+        auto* password_field = [[NSSecureTextField alloc] initWithFrame:NSMakeRect(0, 0, 200, 24)];
+        [password_field setPlaceholderString:@"Password"];
+
+        auto* containerView = [[NSView alloc] initWithFrame:NSMakeRect(0, 0, 200, 50)];
+
+        [containerView addSubview:username_field];
+        [containerView addSubview:password_field];
+
+        self.dialog = [[NSAlert alloc] init];
+        [self.dialog setMessageText:@"Username & Password required"];
+
+        [self.dialog setAccessoryView:containerView];
+
+        [self.dialog beginSheetModalForWindow:[self window]
+                            completionHandler:^(NSModalResponse) {
+                                Optional<String> username = Ladybird::ns_string_to_string([username_field stringValue]);
+                                Optional<String> password = Ladybird::ns_string_to_string([password_field stringValue]);
+
+                                m_web_view_bridge->username_password_closed(move(username), move(password));
+                                self.dialog = nil;
+                            }];
+    };
+
     m_web_view_bridge->on_request_alert = [weak_self](auto const& message) {
         LadybirdWebView* self = weak_self;
         if (self == nil) {

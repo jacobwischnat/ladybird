@@ -122,6 +122,9 @@ public:
     DevicePixelSize window_size() const { return m_window_size; }
     void set_window_size(DevicePixelSize size) { m_window_size = size; }
 
+    void username_password_closed(Optional<String> username, Optional<String> password);
+    void did_request_username_password();
+
     void did_request_alert(String const& message);
     void alert_closed();
 
@@ -136,10 +139,13 @@ public:
         Alert,
         Confirm,
         Prompt,
+        UsernamePassword
     };
     bool has_pending_dialog() const { return m_pending_dialog != PendingDialog::None; }
     PendingDialog pending_dialog() const { return m_pending_dialog; }
     Optional<String> const& pending_dialog_text() const { return m_pending_dialog_text; }
+    Optional<String> const& pending_username() const { return m_pending_username; }
+    Optional<String> const& pending_password() const { return m_pending_password; }
     void dismiss_dialog();
     void accept_dialog();
 
@@ -244,6 +250,8 @@ private:
     Optional<Empty> m_pending_alert_response;
     Optional<bool> m_pending_confirm_response;
     Optional<Optional<String>> m_pending_prompt_response;
+    Optional<String> m_pending_username;
+    Optional<String> m_pending_password;
 
     PendingNonBlockingDialog m_pending_non_blocking_dialog { PendingNonBlockingDialog::None };
     WeakPtr<HTML::HTMLElement> m_pending_non_blocking_dialog_target;
@@ -327,6 +335,7 @@ public:
     virtual void page_did_unhover_link() { }
     virtual void page_did_change_favicon(Gfx::Bitmap const&) { }
     virtual void page_did_layout() { }
+    virtual void page_did_request_username_password() { }
     virtual void page_did_request_alert(String const&) { }
     virtual void page_did_request_confirm(String const&) { }
     virtual void page_did_request_prompt(String const&, String const&) { }

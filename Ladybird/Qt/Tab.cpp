@@ -179,6 +179,10 @@ Tab::Tab(BrowserWindow* window, WebContentOptions const& web_content_options, St
         emit favicon_changed(tab_index(), m_favicon);
     };
 
+    view().on_request_username_password = [this](auto const& realm) {
+
+    };
+
     view().on_request_alert = [this](auto const& message) {
         m_dialog = new QMessageBox(QMessageBox::Icon::Warning, "Ladybird", qstring_from_ak_string(message), QMessageBox::StandardButton::Ok, &view());
         m_dialog->exec();

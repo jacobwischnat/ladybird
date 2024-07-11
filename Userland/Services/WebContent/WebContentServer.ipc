@@ -97,6 +97,7 @@ endpoint WebContentServer
     set_system_visibility_state(u64 page_id, bool visible) =|
 
     alert_closed(u64 page_id) =|
+    username_password_closed(u64 page_id, Optional<String> username, Optional<String> password) =|
     confirm_closed(u64 page_id, bool accepted) =|
     prompt_closed(u64 page_id, Optional<String> response) =|
     color_picker_update(u64 page_id, Optional<Color> picked_color, Web::HTML::ColorPickerUpdateState state) =|

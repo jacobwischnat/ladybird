@@ -62,6 +62,7 @@ public:
     Web::WebIDL::ExceptionOr<void> toggle_media_controls_state();
 
     void alert_closed();
+    void username_password_closed(Optional<String> username, Optional<String> password);
     void confirm_closed(bool accepted);
     void prompt_closed(Optional<String> response);
     void color_picker_update(Optional<Color> picked_color, Web::HTML::ColorPickerUpdateState state);
@@ -129,6 +130,7 @@ private:
     virtual void page_did_change_active_document_in_top_level_browsing_context(Web::DOM::Document&) override;
     virtual void page_did_destroy_document(Web::DOM::Document&) override;
     virtual void page_did_finish_loading(URL::URL const&) override;
+    virtual void page_did_request_username_password() override;
     virtual void page_did_request_alert(String const&) override;
     virtual void page_did_request_confirm(String const&) override;
     virtual void page_did_request_prompt(String const&, String const&) override;

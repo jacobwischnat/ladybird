@@ -382,6 +382,16 @@ void PageClient::page_did_request_media_context_menu(Web::CSSPixelPoint content_
     client().async_did_request_media_context_menu(m_id, page().css_to_device_point(content_position).to_type<int>(), target, modifiers, move(menu));
 }
 
+void PageClient::page_did_request_username_password()
+{
+    client().async_did_request_username_password(m_id);
+}
+
+void PageClient::username_password_closed(Optional<String> username, Optional<String> password)
+{
+    page().username_password_closed(username, password);
+}
+
 void PageClient::page_did_request_alert(String const& message)
 {
     client().async_did_request_alert(m_id, message);

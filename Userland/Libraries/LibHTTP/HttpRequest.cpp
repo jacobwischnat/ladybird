@@ -268,6 +268,7 @@ void HttpRequest::set_headers(HTTP::HeaderMap headers)
 
 Optional<Header> HttpRequest::get_http_basic_authentication_header(URL::URL const& url)
 {
+    dbgln("get_http_basic_authentication_header");
     if (!url.includes_credentials())
         return {};
     StringBuilder builder;

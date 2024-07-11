@@ -7,6 +7,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include "AK/Assertions.h"
+#include "AK/ByteString.h"
 #include <AK/Base64.h>
 #include <AK/Debug.h>
 #include <AK/ScopeGuard.h>
@@ -47,6 +49,7 @@
 #include <LibWeb/Loader/LoadRequest.h>
 #include <LibWeb/Loader/ResourceLoader.h>
 #include <LibWeb/MixedContent/AbstractOperations.h>
+#include <LibWeb/Page/Page.h>
 #include <LibWeb/Platform/EventLoopPlugin.h>
 #include <LibWeb/ReferrerPolicy/AbstractOperations.h>
 #include <LibWeb/SRI/SRI.h>
@@ -1716,6 +1719,8 @@ WebIDL::ExceptionOr<JS::NonnullGCPtr<PendingResponse>> http_network_or_cache_fet
                 }
             }
 
+            dbgln("http_request->current_url().includes_credentials(): {}", http_request->current_url());
+
             // 2. If httpRequest’s header list does not contain `Authorization`, then:
             if (!http_request->header_list()->contains("Authorization"sv.bytes())) {
                 // 1. Let authorizationValue be null.
@@ -1939,17 +1944,37 @@ WebIDL::ExceptionOr<JS::NonnullGCPtr<PendingResponse>> http_network_or_cache_fet
                     return;
                 }
 
-                // FIXME: 2. Let username and password be the result of prompting the end user for a username and password,
+                // 2. Let username and password be the result of prompting the end user for a username and password,
                 //           respectively, in request’s window.
-                dbgln("Fetch: Username/password prompt is not implemented, using empty strings. This request will probably fail.");
-                auto username = ByteString::empty();
-                auto password = ByteString::empty();
+
+                // TODO: Do we have an appropriate place to store credentials? Even if just for the session.
+                // TODO: We should clear the saved credentials if we get an authentication error
+                auto& page = Bindings::host_defined_page(realm);
+                if (!page.pending_username().has_value() || !page.pending_password().has_value()) {
+                    page.did_request_username_password();
+
+                    HTML::main_thread_event_loop().spin_until([&] {
+                        return page.pending_username().has_value() && page.pending_password().has_value();
+                    });
+                }
+
+                auto username = page.pending_username()->to_byte_string();
+                auto password = page.pending_password()->to_byte_string();
 
                 // 3. Set the username given request’s current URL and username.
                 MUST(request->current_url().set_username(username));
 
                 // 4. Set the password given request’s current URL and password.
                 MUST(request->current_url().set_password(password));
+
+                // TODO: I don't think this belongs here. But it is needed to get Basic auth pages to work.
+                auto const& url = request->current_url();
+                auto payload = MUST(String::formatted("{}:{}", MUST(url.username()), MUST(url.password())));
+                auto token = MUST(encode_base64(payload.bytes()));
+                auto authorization_value = String::formatted("Basic {}", token.bytes_as_string_view());
+
+                auto header = Infrastructure::Header::from_string_pair("Authorization"sv, MUST(authorization_value));
+                request->header_list()->append(move(header));
             }
 
             // 4. Set response to the result of running HTTP-network-or-cache fetch given fetchParams and true.
