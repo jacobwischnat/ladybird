@@ -7,6 +7,8 @@
  * SPDX-License-Identifier: BSD-2-Clause
  */
 
+#include "AK/Assertions.h"
+#include "AK/ByteString.h"
 #include <AK/Base64.h>
 #include <AK/Debug.h>
 #include <AK/ScopeGuard.h>
@@ -47,6 +49,7 @@
 #include <LibWeb/Loader/LoadRequest.h>
 #include <LibWeb/Loader/ResourceLoader.h>
 #include <LibWeb/MixedContent/AbstractOperations.h>
+#include <LibWeb/Page/Page.h>
 #include <LibWeb/Platform/EventLoopPlugin.h>
 #include <LibWeb/ReferrerPolicy/AbstractOperations.h>
 #include <LibWeb/SRI/SRI.h>
@@ -1485,6 +1488,8 @@ WebIDL::ExceptionOr<JS::NonnullGCPtr<PendingResponse>> http_network_or_cache_fet
 
     auto& vm = realm.vm();
 
+    auto& page = Bindings::host_defined_page(realm);
+
     // 1. Let request be fetchParams’s request.
     auto request = fetch_params.request();
 
@@ -1846,7 +1851,7 @@ WebIDL::ExceptionOr<JS::NonnullGCPtr<PendingResponse>> http_network_or_cache_fet
 
     auto returned_pending_response = PendingResponse::create(vm, request);
 
-    pending_forward_response->when_loaded([&realm, &vm, &fetch_params, request, response, stored_response, http_request, returned_pending_response, is_authentication_fetch, is_new_connection_fetch, revalidating_flag, include_credentials, response_was_null = !response, http_cache](JS::NonnullGCPtr<Infrastructure::Response> resolved_forward_response) mutable {
+    pending_forward_response->when_loaded([&realm, &vm, &page, &fetch_params, request, response, stored_response, http_request, returned_pending_response, is_authentication_fetch, is_new_connection_fetch, revalidating_flag, include_credentials, response_was_null = !response, http_cache](JS::NonnullGCPtr<Infrastructure::Response> resolved_forward_response) mutable {
         dbgln_if(WEB_FETCH_DEBUG, "Fetch: Running 'HTTP-network-or-cache fetch' pending_forward_response load callback");
         if (response_was_null) {
             auto forward_response = resolved_forward_response;
@@ -1910,6 +1915,7 @@ WebIDL::ExceptionOr<JS::NonnullGCPtr<PendingResponse>> http_network_or_cache_fet
             && http_request->response_tainting() != Infrastructure::Request::ResponseTainting::CORS
             && include_credentials == IncludeCredentials::Yes
             && request->window().has<JS::GCPtr<HTML::EnvironmentSettingsObject>>()) {
+
             // 1. Needs testing: multiple `WWW-Authenticate` headers, missing, parsing issues.
             // (Red box in the spec, no-op)
 
@@ -1930,7 +1936,6 @@ WebIDL::ExceptionOr<JS::NonnullGCPtr<PendingResponse>> http_network_or_cache_fet
                 auto [body, _] = TRY_OR_IGNORE(safely_extract_body(realm, converted_source));
                 request->set_body(move(body));
             }
-
             // 3. If request’s use-URL-credentials flag is unset or isAuthenticationFetch is true, then:
             if (!request->use_url_credentials() || is_authentication_fetch == IsAuthenticationFetch::Yes) {
                 // 1. If fetchParams is canceled, then return the appropriate network error for fetchParams.
@@ -1939,17 +1944,23 @@ WebIDL::ExceptionOr<JS::NonnullGCPtr<PendingResponse>> http_network_or_cache_fet
                     return;
                 }
 
-                // FIXME: 2. Let username and password be the result of prompting the end user for a username and password,
+                // 2. Let username and password be the result of prompting the end user for a username and password,
                 //           respectively, in request’s window.
-                dbgln("Fetch: Username/password prompt is not implemented, using empty strings. This request will probably fail.");
-                auto username = ByteString::empty();
-                auto password = ByteString::empty();
 
-                // 3. Set the username given request’s current URL and username.
-                MUST(request->current_url().set_username(username));
+                if (MUST(request->current_url().username()).is_empty() || MUST(request->current_url().password()).is_empty()) {
+                    page.did_request_username_password();
+                    HTML::main_thread_event_loop().spin_until([&] {
+                        return !page.has_pending_dialog();
+                    });
+                }
 
-                // 4. Set the password given request’s current URL and password.
-                MUST(request->current_url().set_password(password));
+                if (page.pending_username().has_value() && page.pending_password().has_value()) {
+                    auto username = page.pending_username()->to_byte_string();
+                    auto password = page.pending_password()->to_byte_string();
+
+                    MUST(request->current_url().set_username(username));
+                    MUST(request->current_url().set_password(password));
+                }
             }
 
             // 4. Set response to the result of running HTTP-network-or-cache fetch given fetchParams and true.

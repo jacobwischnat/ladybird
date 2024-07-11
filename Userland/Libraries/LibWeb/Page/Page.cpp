@@ -268,6 +268,23 @@ static ResponseType spin_event_loop_until_dialog_closed(PageClient& client, Opti
     return response.release_value();
 }
 
+void Page::did_request_username_password()
+{
+    m_pending_dialog = PendingDialog::UsernamePassword;
+    m_pending_username.clear();
+    m_pending_password.clear();
+    m_client->page_did_request_username_password();
+}
+
+void Page::username_password_closed(Optional<String> username, Optional<String> password)
+{
+    if (m_pending_dialog == PendingDialog::UsernamePassword) {
+        m_pending_username = move(username);
+        m_pending_password = move(password);
+        m_pending_dialog = PendingDialog::None;
+    }
+}
+
 void Page::did_request_alert(String const& message)
 {
     m_pending_dialog = PendingDialog::Alert;
@@ -332,6 +349,7 @@ void Page::dismiss_dialog()
 {
     switch (m_pending_dialog) {
     case PendingDialog::None:
+    case PendingDialog::UsernamePassword:
         break;
     case PendingDialog::Alert:
         m_client->page_did_request_accept_dialog();
@@ -347,6 +365,7 @@ void Page::accept_dialog()
 {
     switch (m_pending_dialog) {
     case PendingDialog::None:
+    case PendingDialog::UsernamePassword:
         break;
     case PendingDialog::Alert:
     case PendingDialog::Confirm:

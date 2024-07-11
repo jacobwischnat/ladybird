@@ -357,6 +357,14 @@ void WebContentClient::did_get_js_console_messages(u64 page_id, i32 start_index,
     }
 }
 
+void WebContentClient::did_request_username_password(u64 page_id)
+{
+    if (auto view = view_for_page_id(page_id); view.has_value()) {
+        if (view->on_request_username_password)
+            view->on_request_username_password();
+    }
+}
+
 void WebContentClient::did_request_alert(u64 page_id, String const& message)
 {
     if (auto view = view_for_page_id(page_id); view.has_value()) {

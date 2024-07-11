@@ -109,6 +109,7 @@ private:
     virtual void js_console_request_messages(u64 page_id, i32) override;
 
     virtual void alert_closed(u64 page_id) override;
+    virtual void username_password_closed(u64 page_id, Optional<String> const& username, Optional<String> const& password) override;
     virtual void confirm_closed(u64 page_id, bool accepted) override;
     virtual void prompt_closed(u64 page_id, Optional<String> const& response) override;
     virtual void color_picker_update(u64 page_id, Optional<Color> const& picked_color, Web::HTML::ColorPickerUpdateState const& state) override;
