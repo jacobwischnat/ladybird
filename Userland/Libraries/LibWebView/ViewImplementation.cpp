@@ -307,6 +307,11 @@ void ViewImplementation::js_console_request_messages(i32 start_index)
     client().async_js_console_request_messages(page_id(), start_index);
 }
 
+void ViewImplementation::username_password_closed(Optional<String> username, Optional<String> password)
+{
+    client().async_username_password_closed(page_id(), move(username), move(password));
+}
+
 void ViewImplementation::alert_closed()
 {
     client().async_alert_closed(page_id());

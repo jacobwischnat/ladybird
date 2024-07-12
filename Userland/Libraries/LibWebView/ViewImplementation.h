@@ -100,6 +100,7 @@ public:
     void js_console_input(ByteString const& js_source);
     void js_console_request_messages(i32 start_index);
 
+    void username_password_closed(Optional<String> username, Optional<String> password);
     void alert_closed();
     void confirm_closed(bool accepted);
     void prompt_closed(Optional<String> response);
@@ -169,6 +170,7 @@ public:
     Function<void()> on_stop_tooltip_override;
     Function<void(ByteString const&)> on_enter_tooltip_area;
     Function<void()> on_leave_tooltip_area;
+    Function<void()> on_request_username_password;
     Function<void(String const& message)> on_request_alert;
     Function<void(String const& message)> on_request_confirm;
     Function<void(String const& message, String const& default_)> on_request_prompt;

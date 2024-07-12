@@ -1054,6 +1054,12 @@ void ConnectionFromClient::js_console_request_messages(u64 page_id, i32 start_in
         page->js_console_request_messages(start_index);
 }
 
+void ConnectionFromClient::username_password_closed(u64 page_id, Optional<String> const& username, Optional<String> const& password)
+{
+    if (auto page = this->page(page_id); page.has_value())
+        page->page().username_password_closed(username, password);
+}
+
 void ConnectionFromClient::alert_closed(u64 page_id)
 {
     if (auto page = this->page(page_id); page.has_value())

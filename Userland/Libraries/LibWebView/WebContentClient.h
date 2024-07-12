@@ -79,6 +79,7 @@ private:
     virtual void did_output_js_console_message(u64 page_id, i32 message_index) override;
     virtual void did_get_js_console_messages(u64 page_id, i32 start_index, Vector<ByteString> const& message_types, Vector<ByteString> const& messages) override;
     virtual void did_change_favicon(u64 page_id, Gfx::ShareableBitmap const&) override;
+    virtual void did_request_username_password(u64 page_id) override;
     virtual void did_request_alert(u64 page_id, String const&) override;
     virtual void did_request_confirm(u64 page_id, String const&) override;
     virtual void did_request_prompt(u64 page_id, String const&, String const&) override;
